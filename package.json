@@ -9,8 +9,11 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "graphql": "^15.6.1",
+    "graphql-request": "^3.6.1",
     "next": "11.1.2",
     "react": "17.0.2",
+    "react-datocms": "^1.6.6",
     "react-dom": "17.0.2"
   },
   "devDependencies": {

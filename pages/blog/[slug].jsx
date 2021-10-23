@@ -1,19 +1,29 @@
-import Image from "../../components/Image/Image";
+import { Image, StructuredText } from "react-datocms";
 import Link from "next/link";
-import { getAllSlugs, getPostData } from "../../lib/posts";
 import styles from "../../styles/BlogPost.module.css";
+import { request } from "../../lib/datocms";
 
 export default function BlogPost(props) {
   const { postData } = props;
   return (
     <div className={styles.container}>
       <div style={{ maxWidth: "600px", marginTop: "20px" }}>
-        <Image src={postData.coverImage} alt={postData.title} layout="fill" />
+        <Image data={postData.coverImage.responsiveImage} />
         <h1>{postData.title}</h1>
         <p>
-          {postData.author} / {postData.publishDate}
+          {postData.author.name} / {postData.publishDate}
         </p>
-        <p>{postData.content}</p>
+        <StructuredText
+          data={postData.content}
+          renderBlock={({ record }) => {
+            switch (record.__typename) {
+              case "ImageRecord":
+                return <Image data={record.image.responsiveImage} />;
+              default:
+                return null;
+            }
+          }}
+        />
         <div style={{ marginTop: "50px" }}>
           <Link href="/">
             <a>⬅️&nbsp;&nbsp;Back to the frontpage</a>
@@ -24,19 +34,87 @@ export default function BlogPost(props) {
   );
 }
 
-export const getStaticPaths = () => {
-  const paths = getAllSlugs();
+const PATHS_QUERY = `
+query MyQuery {
+  allArticles {
+    slug
+  }
+}
+`;
+export const getStaticPaths = async () => {
+  const slugQuery = await request({
+    query: PATHS_QUERY,
+  });
+
+  let paths = [];
+  slugQuery.allArticles.map((p) => paths.push(`/blog/${p.slug}`));
+
   return {
     paths,
     fallback: false,
   };
 };
 
-export const getStaticProps = ({ params }) => {
-  const postData = getPostData(params.slug);
+const ARTICLE_QUERY = `
+query MyQuery($slug: String) {
+  article(filter: {slug: {eq: $slug}}) {
+    author {
+      name
+    }
+    content {
+      value
+      blocks {
+        __typename
+        ... on ImageRecord {
+          id
+          image { 
+          	responsiveImage {
+              width
+              webpSrcSet
+              title
+              srcSet
+              src
+              sizes
+              height
+              bgColor
+              base64
+              aspectRatio
+              alt
+          	}
+          }
+        }
+      }
+    }
+    coverImage {
+      responsiveImage {
+        width
+        webpSrcSet
+        title
+        srcSet
+        src
+        sizes
+        height
+        bgColor
+        base64
+        aspectRatio
+        alt
+      }
+    }
+    id
+    publishDate
+    slug
+    title
+  }
+}
+`;
+export const getStaticProps = async ({ params }) => {
+  const post = await request({
+    query: ARTICLE_QUERY,
+    variables: { slug: params.slug },
+  });
   return {
     props: {
-      postData,
+      postData: post.article,
     },
   };
 };
