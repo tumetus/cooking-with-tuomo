@@ -1,10 +1,13 @@
-import { Image, StructuredText } from "react-datocms";
+import { Image, StructuredText, useQuerySubscription } from "react-datocms";
 import Link from "next/link";
 import styles from "../../styles/BlogPost.module.css";
 import { request } from "../../lib/datocms";
 
 export default function BlogPost(props) {
-  const { postData } = props;
+  // const { postData } = props;
+  const { data, error, status } = useQuerySubscription(props.subscription);
+  const postData = data.article;
+
   return (
     <div className={styles.container}>
       <div style={{ maxWidth: "600px", marginTop: "20px" }}>
@@ -41,9 +44,10 @@ query MyQuery {
   }
 }
 `;
-export const getStaticPaths = async () => {
+export const getStaticPaths = async (context) => {
   const slugQuery = await request({
     query: PATHS_QUERY,
+    preview: context.preview,
   });
 
   let paths = [];
@@ -107,14 +111,25 @@ query MyQuery($slug: String) {
   }
 }
 `;
-export const getStaticProps = async ({ params }) => {
-  const post = await request({
+export const getStaticProps = async ({ params, preview }) => {
+  const graphqlRequest = {
     query: ARTICLE_QUERY,
     variables: { slug: params.slug },
-  });
+    // If true, the Content Delivery API with draft content will be used
+    preview,
+  };
   return {
     props: {
-      postData: post.article,
+      subscription: preview
+        ? {
+            ...graphqlRequest,
+            initialData: await request(graphqlRequest),
+            token: process.env.NEXT_DATOCMS_API_TOKEN,
+          }
+        : {
+            enabled: false,
+            initialData: await request(graphqlRequest),
+          },
     },
   };
 };

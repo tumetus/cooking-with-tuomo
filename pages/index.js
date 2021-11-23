@@ -37,9 +37,10 @@ query MyQuery {
 }
 `;
 
-export async function getStaticProps() {
+export async function getStaticProps(context) {
   const data = await request({
     query: HOMEPAGE_QUERY,
+    preview: context.preview,
   });
   return {
     props: { data },
