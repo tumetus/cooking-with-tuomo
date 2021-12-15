@@ -55,7 +55,7 @@ export const getStaticPaths = async (context) => {
 
   return {
     paths,
-    fallback: false,
+    fallback: "blocking",
   };
 };
 
@@ -131,5 +131,6 @@ export const getStaticProps = async ({ params, preview }) => {
             initialData: await request(graphqlRequest),
           },
     },
+    revalidate: 15,
   };
 };
