@@ -9,7 +9,7 @@ export default async function handler(req, res) {
   }
 
   // check for the secret token
-  if (req.query.secret !== "tuomo") {
+  if (req.query.secret !== process.env.REVALIDATE_SECRET_TOKEN) {
     return res.status(401).json({ message: "Invalid token" });
   }
 
